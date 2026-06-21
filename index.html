@@ -471,7 +471,8 @@ function renderTurnos(){
   const lista=filtroActivo==='todos'?turnos:turnos.filter(t=>t.estado===filtroActivo);
   const sorted=[...lista].sort((a,b)=>a.hora.localeCompare(b.hora));
   if(!sorted.length){
-    document.getElementById('turnoList').innerHTML='<div style="padding:24px;text-align:center;font-size:.78rem;color:var(--text-muted);">Sin turnos para mostrar</div>';
+    const msgVacio=filtroActivo==='todos'?'No hay turnos agendados para hoy':'No hay turnos que coincidan con los filtros aplicados';
+    document.getElementById('turnoList').innerHTML=`<div style="padding:24px;text-align:center;font-size:.78rem;color:var(--text-muted);">${msgVacio}</div>`;
     return;
   }
   document.getElementById('turnoList').innerHTML=sorted.map(t=>{
@@ -562,6 +563,10 @@ document.getElementById('medicoDelBtn').onclick=function(){
 // ── PACIENTES ──────────────────────────────────────────
 const badgeP={Activo:'b-activo',Nuevo:'b-nuevo','En seguimiento':'b-seguimiento',Inactivo:'b-inactivo'};
 function renderPacientes(){
+  if(!pacientes.length){
+    document.getElementById('pacientesList').innerHTML='<div style="padding:24px;text-align:center;font-size:.78rem;color:var(--text-muted);">Todavía no hay pacientes cargados en el sistema</div>';
+    return;
+  }
   document.getElementById('pacientesList').innerHTML=pacientes.map((p,i)=>`
     <div class="paciente-row" onclick="abrirModalPaciente(${i})">
       <div>
@@ -601,6 +606,10 @@ document.getElementById('pacienteDelBtn').onclick=function(){
 // ── OBRAS SOCIALES ─────────────────────────────────────
 const badgeOS={'Al día':'b-aldia','Con deuda':'b-deuda','Suspendida':'b-suspendida'};
 function renderOS(){
+  if(!obrassociales.length){
+    document.getElementById('osGrid').innerHTML='<div style="grid-column:1/-1;padding:24px;text-align:center;font-size:.78rem;color:var(--text-muted);">No hay obras sociales cargadas todavía</div>';
+    return;
+  }
   document.getElementById('osGrid').innerHTML=obrassociales.map((o,i)=>`
     <div class="os-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -626,7 +635,7 @@ function renderAlertas(){
         <div class="alerta-icon">${alertaIcon[a.nivel]||'📌'}</div>
         <div><div class="alerta-text">${esc(a.texto)}</div><div class="alerta-meta">${esc(a.meta)}</div></div>
       </div>`).join('')
-      :'<div style="padding:14px;font-size:.75rem;color:var(--text-muted);">Sin alertas</div>';
+      :'<div style="padding:14px;font-size:.75rem;color:var(--text-muted);">No hay alertas activas. Todo está al día</div>';
   };
   renderList(crit,'alertasCrit');
   renderList(otras,'alertasOtras');
