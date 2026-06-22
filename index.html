@@ -183,6 +183,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="showTab('medicos',this)">👨‍⚕️ Médicos</div>
   <div class="tab" onclick="showTab('pacientes',this)">🧑‍🤝‍🧑 Pacientes</div>
   <div class="tab" onclick="showTab('obrassociales',this)">🏥 Obras sociales</div>
+  <div class="tab" onclick="showTab('facturacion',this)">💳 Facturación</div>
   <div class="tab" onclick="showTab('alertas',this)">🔔 Alertas</div>
 </div>
 
@@ -244,6 +245,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="page" id="tab-obrassociales">
     <div style="font-size:.85rem;font-weight:700;margin-bottom:14px;">Obras sociales y convenios</div>
     <div class="three-col" id="osGrid"></div>
+  </div>
+
+  <!-- TAB: FACTURACION -->
+  <div class="page" id="tab-facturacion">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:.85rem;font-weight:700;">Facturacion a obras sociales y particulares</div>
+      <button class="hdr-btn" onclick="abrirModalFactura(-1)">+ Nueva factura</button>
+    </div>
+    <div class="table-wrap">
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;padding:8px 16px;background:#f8fafc;border-bottom:1px solid var(--border);">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);">Paciente / Obra social</div>
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);text-align:center;">Monto</div>
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);text-align:center;">Fecha</div>
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);">Estado</div>
+      </div>
+      <div id="facturacionList"></div>
+      <div class="actions-bar"><button class="btn-add" onclick="abrirModalFactura(-1)">+ Nueva factura</button></div>
+    </div>
   </div>
 
   <!-- TAB: ALERTAS -->
@@ -331,6 +350,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- MODAL FACTURA -->
+<div class="moverlay" id="modalFactura">
+  <div class="modal">
+    <h3>💳 Factura</h3>
+    <label>Paciente</label><input type="text" id="fc-paciente" placeholder="Ej: García, María Elena">
+    <label>Obra social</label>
+    <select id="fc-os"></select>
+    <label>Monto</label><input type="number" id="fc-monto" placeholder="0">
+    <label>Fecha</label><input type="date" id="fc-fecha">
+    <label>Estado</label>
+    <select id="fc-estado">
+      <option value="Pendiente">Pendiente</option>
+      <option value="Facturada">Facturada</option>
+      <option value="Cobrada">Cobrada</option>
+    </select>
+    <div class="mactions">
+      <button class="mbtn-save" id="facturaSaveBtn">Guardar</button>
+      <button class="mbtn-del" id="facturaDelBtn" style="display:none">Eliminar</button>
+      <button class="mbtn-cancel" onclick="closeModal('modalFactura')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ALERTA -->
 <div class="moverlay" id="modalAlerta">
   <div class="modal">
@@ -405,6 +447,13 @@ const D_OS=[
   {nombre:'Galeno',pacientes:6,deuda:0,estado:'Al día',notas:''},
   {nombre:'Particular',pacientes:14,deuda:0,estado:'Al día',notas:'Pago en efectivo o transferencia'},
 ];
+const D_FACTURACION=[
+  {paciente:'García, María Elena',os:'OSDE',monto:18000,fecha:'2026-06-19',estado:'Cobrada'},
+  {paciente:'López, Juan Martín',os:'IOMA',monto:22000,fecha:'2026-06-19',estado:'Facturada'},
+  {paciente:'Sánchez, Laura Beatriz',os:'PAMI',monto:15000,fecha:'2026-05-20',estado:'Pendiente'},
+  {paciente:'Ruiz, Carmen',os:'PAMI',monto:15000,fecha:'2026-04-15',estado:'Pendiente'},
+  {paciente:'Martínez, Ana Paula',os:'Particular',monto:25000,fecha:'2026-06-15',estado:'Cobrada'},
+];
 const D_ALERTAS=[
   {texto:'Turno sin confirmar hace 48hs',meta:'Rodríguez, Carlos — Cardiología 10:00 — Swiss Medical',nivel:'critico'},
   {texto:'PAMI: deuda de facturación $320.000',meta:'Facturación mayo sin cobrar — Gestionar con urgencia',nivel:'critico'},
@@ -419,10 +468,11 @@ let medicos=gto('cli_medicos',D_MEDICOS);
 let pacientes=gto('cli_pacientes',D_PACIENTES);
 let obrassociales=gto('cli_os',D_OS);
 let alertas=gto('cli_alertas',D_ALERTAS);
+let facturacion=gto('cli_facturacion',D_FACTURACION);
 let filtroActivo='todos';
 
 // ── TABS ───────────────────────────────────────────────
-const tabTitulos={agenda:'Agenda del día',medicos:'Médicos y especialidades',pacientes:'Cartera de pacientes',obrassociales:'Obras sociales',alertas:'Alertas y recordatorios'};
+const tabTitulos={agenda:'Agenda del día',medicos:'Médicos y especialidades',pacientes:'Cartera de pacientes',obrassociales:'Obras sociales',facturacion:'Facturación',alertas:'Alertas y recordatorios'};
 function showTab(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
@@ -433,6 +483,7 @@ function showTab(id,el){
   else if(id==='medicos') renderMedicos();
   else if(id==='pacientes') renderPacientes();
   else if(id==='obrassociales') renderOS();
+  else if(id==='facturacion') renderFacturacion();
   else if(id==='alertas') renderAlertas();
 }
 
@@ -661,6 +712,59 @@ document.getElementById('alertaSaveBtn').onclick=function(){
 };
 document.getElementById('alertaDelBtn').onclick=function(){
   if(editAlertaIdx>=0&&confirm('¿Eliminar esta alerta?')){alertas.splice(editAlertaIdx,1);sto('cli_alertas',alertas);renderAlertas();renderKPIs();closeModal('modalAlerta');}
+};
+
+// ── FACTURACION ──────────────────────────────────────────
+const badgeFC={'Pendiente':'b-pendiente','Facturada':'b-aldia','Cobrada':'b-activo'};
+function llenarSelectOS(selId){
+  const sel=document.getElementById(selId);
+  sel.innerHTML=obrassociales.map(o=>`<option value="${esc(o.nombre)}">${esc(o.nombre)}</option>`).join('');
+}
+function renderFacturacion(){
+  if(!facturacion.length){
+    document.getElementById('facturacionList').innerHTML='<div style="padding:24px;text-align:center;font-size:.78rem;color:var(--text-muted);">Todavia no hay facturas cargadas</div>';
+    return;
+  }
+  document.getElementById('facturacionList').innerHTML=facturacion.map((f,i)=>`
+    <div class="paciente-row" onclick="abrirModalFactura(${i})">
+      <div>
+        <div class="paciente-nombre">${esc(f.paciente)}</div>
+        <div class="paciente-os">${esc(f.os)}</div>
+      </div>
+      <div class="paciente-fecha">$${Number(f.monto).toLocaleString('es-AR')}</div>
+      <div class="paciente-fecha">${f.fecha||'—'}</div>
+      <span class="badge ${badgeFC[f.estado]||'b-pendiente'}">${esc(f.estado)}</span>
+    </div>`).join('');
+}
+let editFacturaIdx=null;
+function abrirModalFactura(i){
+  editFacturaIdx=i;
+  llenarSelectOS('fc-os');
+  const f=i>=0?facturacion[i]:{paciente:'',os:obrassociales[0]?obrassociales[0].nombre:'',monto:'',fecha:'',estado:'Pendiente'};
+  document.getElementById('fc-paciente').value=f.paciente;
+  document.getElementById('fc-os').value=f.os;
+  document.getElementById('fc-monto').value=f.monto;
+  document.getElementById('fc-fecha').value=f.fecha;
+  document.getElementById('fc-estado').value=f.estado;
+  document.getElementById('facturaDelBtn').style.display=i>=0?'':'none';
+  document.getElementById('modalFactura').classList.add('open');
+}
+document.getElementById('facturaSaveBtn').onclick=function(){
+  const obj={
+    paciente:document.getElementById('fc-paciente').value.trim(),
+    os:document.getElementById('fc-os').value,
+    monto:Number(document.getElementById('fc-monto').value)||0,
+    fecha:document.getElementById('fc-fecha').value,
+    estado:document.getElementById('fc-estado').value,
+  };
+  if(!obj.paciente)return;
+  if(editFacturaIdx>=0)facturacion[editFacturaIdx]=obj;else facturacion.push(obj);
+  sto('cli_facturacion',facturacion);renderFacturacion();closeModal('modalFactura');
+};
+document.getElementById('facturaDelBtn').onclick=function(){
+  if(editFacturaIdx>=0&&confirm('¿Eliminar esta factura?')){
+    facturacion.splice(editFacturaIdx,1);sto('cli_facturacion',facturacion);renderFacturacion();closeModal('modalFactura');
+  }
 };
 
 // ── MODAL HELPER ───────────────────────────────────────
