@@ -261,7 +261,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);">Estado</div>
       </div>
       <div id="facturacionList"></div>
-      <div class="actions-bar"><button class="btn-add" onclick="abrirModalFactura(-1)">+ Nueva factura</button></div>
+      
     </div>
   </div>
 
@@ -493,10 +493,12 @@ function renderKPIs(){
   const conf=turnos.filter(t=>t.estado==='Confirmado').length;
   const pend=turnos.filter(t=>t.estado==='Pendiente').length;
   const canc=turnos.filter(t=>t.estado==='Cancelado').length;
+  const atend=turnos.filter(t=>t.estado==='Atendido').length;
   const crit=alertas.filter(a=>a.nivel==='critico').length;
   const items=[
     {num:total,lbl:'Turnos hoy',icon:'📅',cls:'ki-rojo'},
     {num:conf,lbl:'Confirmados',icon:'✅',cls:'ki-verde'},
+    {num:atend,lbl:'Atendidos',icon:'🩺',cls:'ki-azul'},
     {num:pend,lbl:'Pendientes',icon:'⏳',cls:'ki-amarillo'},
     {num:canc,lbl:'Cancelados',icon:'❌',cls:'ki-gris'},
     {num:crit,lbl:'Alertas críticas',icon:'🚨',cls:crit>0?'ki-rojo':'ki-verde'},
@@ -509,7 +511,7 @@ function renderKPIs(){
         <div class="kpi-lbl">${it.lbl}</div>
       </div>
     </div>`).join('');
-  document.getElementById('agendaSub').textContent=`${total} turnos · ${conf} confirmados · ${pend} pendientes · ${canc} cancelados`;
+  document.getElementById('agendaSub').textContent=`${total} turnos · ${conf} confirmados · ${atend} atendidos · ${pend} pendientes · ${canc} cancelados`;
 }
 
 // ── TURNOS ─────────────────────────────────────────────
